@@ -8,7 +8,7 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
  */
 class StudentModel extends Model {
     protected $table = 'students';
-     protected $user_table = 'users';
+    protected $user_table = 'users';
     protected $primary_key = 'id';
 
     public function __construct()
@@ -17,32 +17,33 @@ class StudentModel extends Model {
     }
 
 
-     public function page($q = '', $records_per_page = null, $page = null) {
- 
-           if (is_null($page)) {
-            return $this->db->table($this->table)->get_all();
+    public function page($q = '', $records_per_page = null, $page = null) {
+        if (is_null($page)) {
+            return $this->db->table('students')->get_all();
         } else {
-            $query = $this->db->table($this->table);
+            $query = $this->db->table('students');
 
-                // Build LIKE conditions
-                $query->like('id', '%'.$q.'%')
-                    ->or_like('first_name', '%'.$q.'%')
-                    ->or_like('last_name', '%'.$q.'%')
-                    ->or_like('email', '%'.$q.'%');
+            // Build LIKE conditions
+            $query->like('id', '%'.$q.'%')
+                  ->or_like('first_name', '%'.$q.'%')
+                  ->or_like('last_name', '%'.$q.'%')
+                  ->or_like('email', '%'.$q.'%');
                     
-                // Clone before pagination
-                $countQuery = clone $query;
+            // Clone before pagination
+            $countQuery = clone $query;
 
-                $data['total_rows'] = $countQuery->select_count('*', 'count')
-                                                ->get()['count'];
+            $data['total_rows'] = $countQuery->select_count('*', 'count')
+                                             ->get()['count'];
 
-                $data['records'] = $query->pagination($records_per_page, $page)
-                                        ->get_all();
+           $data['records'] = $query->order_by('id', 'ASC')
+                                    ->pagination($records_per_page, $page)
+                                    ->get_all();
 
-                return $data;
-            }
+            return $data;
         }
-           public function user_page($q, $records_per_page = null, $page = null) {
+    }
+        
+    public function user_page($q, $records_per_page = null, $page = null) {
         if (is_null($page)) {
             return $this->db->table($this->user_table)->get_all();
         } else {
@@ -67,16 +68,16 @@ class StudentModel extends Model {
     }
 
     public function user_register($data) {
-        // Hash the password before saving
+     // Hash the password before saving
         $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
         return $this->db->table($this->user_table)->insert($data);
     }
 
     public function user_login($username, $password) {
         $user = $this->db->table($this->user_table)
-                         ->where('username', $username)
-                         ->or_where('email', $username)
-                         ->get();
+                     ->where('username', $username)
+                     ->or_where('email', $username)
+                     ->get();
 
         if ($user && password_verify($password, $user['password'])) {
             return $user;
