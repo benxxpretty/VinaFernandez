@@ -4,9 +4,10 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 /**
  * Controller: StudentController
  * 
- * Automatically generated via CLI.
+ * Handles login, registration, and student management
  */
 class StudentController extends Controller {
+
     public function __construct()
     {
         parent::__construct();
@@ -16,25 +17,17 @@ class StudentController extends Controller {
         $this->call->library('pagination');
     }
 
+    /** -------------------------------
+     *  STUDENT LIST (INDEX)
+     *  ------------------------------- */
     public function index()
     {
-        // Check if user is logged in
         if (!$this->session->userdata('user_id')) {
             redirect('login');
         }
 
-        $this->call->model('StudentModel');
-
-        $page = 1;
-        if(isset($_GET['page']) && ! empty($_GET['page'])) {
-            $page = $this->io->get('page');
-        }
-
-        $q = '';
-        if(isset($_GET['q']) && ! empty($_GET['q'])) {
-            $q = trim($this->io->get('q'));
-        }
-
+        $page = $this->io->get('page') ?? 1;
+        $q = trim($this->io->get('q') ?? '');
         $records_per_page = 8;
 
         $users = $this->StudentModel->page($q, $records_per_page, $page);
@@ -54,28 +47,32 @@ class StudentController extends Controller {
         $this->pagination->initialize($total_rows, $records_per_page, $page, 'students?q='.$q);
         $data['page'] = $this->pagination->paginate();
         $data['current_role'] = $this->session->userdata('role') ?? 'user';
+
         $this->call->view('students/index', $data);
     }
 
+    /** -------------------------------
+     *  CREATE STUDENT
+     *  ------------------------------- */
     public function create() 
     {
         if (!$this->session->userdata('user_id')) {
             redirect('login');
         }
 
-        if($this->io->method() == 'post') {
+        if ($this->io->method() == 'post') {
             $first_name = $this->io->post('first_name');
             $last_name  = $this->io->post('last_name');
             $email      = $this->io->post('email');
 
-            $data = array(
+            $data = [
                 'first_name' => $first_name,
                 'last_name'  => $last_name,
                 'email'      => $email,
-            );
+            ];
 
             if ($this->StudentModel->insert($data)) {
-                redirect();
+                redirect('students/index');
             } else {
                 echo 'Error creating student.';
             }
@@ -84,6 +81,9 @@ class StudentController extends Controller {
         }
     }
 
+    /** -------------------------------
+     *  UPDATE STUDENT
+     *  ------------------------------- */
     public function update($id)
     {
         if (!$this->session->userdata('user_id') || $this->session->userdata('role') !== 'admin') {
@@ -96,19 +96,19 @@ class StudentController extends Controller {
             return;
         }
 
-        if($this->io->method() == 'post') {
+        if ($this->io->method() == 'post') {
             $first_name = $this->io->post('first_name');
             $last_name  = $this->io->post('last_name');
             $email      = $this->io->post('email');
 
-            $data = array(
+            $data = [
                 'first_name' => $first_name,
                 'last_name'  => $last_name,
                 'email'      => $email,
-            );
+            ];
 
             if ($this->StudentModel->update($id, $data)) {
-                redirect();
+                redirect('students/index');
             } else {
                 echo 'Error updating student.';
             }
@@ -118,6 +118,9 @@ class StudentController extends Controller {
         }
     }
 
+    /** -------------------------------
+     *  DELETE STUDENT
+     *  ------------------------------- */
     public function delete($id)
     {
         if (!$this->session->userdata('user_id') || $this->session->userdata('role') !== 'admin') {
@@ -131,6 +134,9 @@ class StudentController extends Controller {
         }
     }
 
+    /** -------------------------------
+     *  LOGIN
+     *  ------------------------------- */
     public function login() {
         if ($this->io->method() == 'post') {
             $username = $this->io->post('username');
@@ -151,41 +157,54 @@ class StudentController extends Controller {
         }
     }
 
- public function register() {
-    if ($this->io->method() == 'post') {
-        $username = $this->io->post('username');
-        $email = $this->io->post('email');
-        $password = $this->io->post('password');
-        $role = $this->io->post('role') ?? 'user';
+    /** -------------------------------
+     *  REGISTER (Auto Redirect to Login)
+     *  ------------------------------- */
+    public function register() {
+        if ($this->io->method() == 'post') {
+            $username = trim($this->io->post('username'));
+            $email = trim($this->io->post('email'));
+            $password = $this->io->post('password');
+            $role = $this->io->post('role') ?? 'user';
 
-        $data = [
-            'username' => $username,
-            'email' => $email,
-            'password' => $password,
-            'role' => $role
-        ];
+            // Hash password for security
+            $hashed_password = password_hash($password, PASSWORD_BCRYPT);
 
-        try {
-            if ($this->StudentModel->user_register($data)) {
-                redirect('login');
-            } else {
-                $data['error'] = 'Registration failed. Please try again.';
-                $this->call->view('user_auth/register', $data);
+            $data = [
+                'username' => $username,
+                'email'    => $email,
+                'password' => $hashed_password,
+                'role'     => $role
+            ];
+
+            try {
+                if ($this->StudentModel->user_register($data)) {
+                    // ✅ Optional flash message
+                    $this->session->set_userdata('success', 'Registration successful! Please log in.');
+                    // ✅ Auto redirect to login
+                    redirect('login');
+                    return;
+                } else {
+                    $data['error'] = 'Registration failed. Please try again.';
+                    $this->call->view('user_auth/register', $data);
+                }
+            } catch (PDOException $e) {
+                if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                    $data['error'] = '⚠️ Username or email already exists. Please choose another one.';
+                    $this->call->view('user_auth/register', $data);
+                } else {
+                    $data['error'] = 'An unexpected database error occurred. Please try again later.';
+                    $this->call->view('user_auth/register', $data);
+                }
             }
-        } catch (PDOException $e) {
-            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
-                $data['error'] = 'Username already exists. Please choose another one.';
-                $this->call->view('user_auth/register', $data);
-            } else {
-                throw $e; // other database errors
-            }
+        } else {
+            $this->call->view('user_auth/register');
         }
-    } else {
-        $this->call->view('user_auth/register');
     }
-}
 
-
+    /** -------------------------------
+     *  LOGOUT
+     *  ------------------------------- */
     public function logout() {
         $this->session->sess_destroy();
         redirect('login');
