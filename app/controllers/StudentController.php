@@ -14,7 +14,6 @@ class StudentController extends Controller {
         $this->call->database();
         $this->call->model('StudentModel');
         $this->call->library('pagination');
-
     }
 
     public function index()
@@ -85,8 +84,6 @@ class StudentController extends Controller {
         }
     }
 
-
-
     public function update($id)
     {
         if (!$this->session->userdata('user_id') || $this->session->userdata('role') !== 'admin') {
@@ -120,8 +117,6 @@ class StudentController extends Controller {
             $this->call->view('students/update', $data);
         }
     }
-
-
 
     public function delete($id)
     {
