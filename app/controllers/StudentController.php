@@ -18,14 +18,13 @@ class StudentController extends Controller {
     }
 
     public function index()
-    
     {
-          // Check if user is logged in
+        // Check if user is logged in
         if (!$this->session->userdata('user_id')) {
             redirect('login');
         }
 
-       $this->call->model('StudentModel');
+        $this->call->model('StudentModel');
 
         $page = 1;
         if(isset($_GET['page']) && ! empty($_GET['page'])) {
@@ -37,11 +36,13 @@ class StudentController extends Controller {
             $q = trim($this->io->get('q'));
         }
 
-        $records_per_page = 10;
+        $records_per_page = 8;
 
         $users = $this->StudentModel->page($q, $records_per_page, $page);
         $data['users'] = $users['records'];
         $total_rows = $users['total_rows'];
+        $data['total_rows'] = $total_rows;
+        $data['q'] = $q;
 
         $this->pagination->set_options([
             'first_link'     => '⏮ First',
@@ -53,17 +54,16 @@ class StudentController extends Controller {
         $this->pagination->set_theme('bootstrap');
         $this->pagination->initialize($total_rows, $records_per_page, $page, 'students?q='.$q);
         $data['page'] = $this->pagination->paginate();
-
-        $this->call->view('students/index', $data);
-        $data['page'] = $this->pagination->paginate();
         $data['current_role'] = $this->session->userdata('role') ?? 'user';
-        $this->call->view('users/index', $data);
+        $this->call->view('students/index', $data);
     }
 
     public function create() 
-    { if (!$this->session->userdata('user_id')) {
+    {
+        if (!$this->session->userdata('user_id')) {
             redirect('login');
         }
+
         if($this->io->method() == 'post') {
             $first_name = $this->io->post('first_name');
             $last_name  = $this->io->post('last_name');
@@ -88,9 +88,11 @@ class StudentController extends Controller {
 
 
     public function update($id)
-    { if (!$this->session->userdata('user_id') || $this->session->userdata('role') !== 'admin') {
+    {
+        if (!$this->session->userdata('user_id') || $this->session->userdata('role') !== 'admin') {
             redirect('login');
         }
+
         $user = $this->StudentModel->find($id);
         if (!$user) {   
             echo 'Student not found.';
@@ -119,27 +121,32 @@ class StudentController extends Controller {
         }
     }
 
+
+
     public function delete($id)
-    {if (!$this->session->userdata('user_id') || $this->session->userdata('role') !== 'admin') {
+    {
+        if (!$this->session->userdata('user_id') || $this->session->userdata('role') !== 'admin') {
             redirect('login');
         }
+
         if ($this->StudentModel->delete($id)) {
-            redirect();
+            redirect('students/index');
         } else {
             echo 'Error deleting student.';
         }
     }
- public function login() {
+
+    public function login() {
         if ($this->io->method() == 'post') {
             $username = $this->io->post('username');
             $password = $this->io->post('password');
 
-            $user = $this->StudentsModel->user_login($username, $password);
+            $user = $this->StudentModel->user_login($username, $password);
             if ($user) {
                 $this->session->set_userdata('user_id', $user['id']);
                 $this->session->set_userdata('username', $user['username']);
                 $this->session->set_userdata('role', $user['role']);
-                redirect('/users/index');
+                redirect('/students/index');
             } else {
                 $data['error'] = 'Invalid username or password';
                 $this->call->view('user_auth/login', $data);
@@ -163,7 +170,7 @@ class StudentController extends Controller {
                 'role' => $role
             ];
 
-            if ($this->StudentsModel->user_register($data)) {
+            if ($this->StudentModel->user_register($data)) {
                 redirect('login');
             } else {
                 $data['error'] = 'Registration failed. Please try again.';
@@ -179,4 +186,3 @@ class StudentController extends Controller {
         redirect('login');
     }
 }
-
