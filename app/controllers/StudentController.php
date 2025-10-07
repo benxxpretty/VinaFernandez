@@ -18,6 +18,7 @@ class StudentController extends Controller {
     }
 
     public function index()
+    
     {
        $this->call->model('StudentModel');
 
@@ -114,5 +115,54 @@ class StudentController extends Controller {
             echo 'Error deleting student.';
         }
     }
+ public function login() {
+        if ($this->io->method() == 'post') {
+            $username = $this->io->post('username');
+            $password = $this->io->post('password');
 
+            $user = $this->StudentsModel->user_login($username, $password);
+            if ($user) {
+                $this->session->set_userdata('user_id', $user['id']);
+                $this->session->set_userdata('username', $user['username']);
+                $this->session->set_userdata('role', $user['role']);
+                redirect('/users/index');
+            } else {
+                $data['error'] = 'Invalid username or password';
+                $this->call->view('user_auth/login', $data);
+            }
+        } else {
+            $this->call->view('user_auth/login');
+        }
+    }
+
+    public function register() {
+        if ($this->io->method() == 'post') {
+            $username = $this->io->post('username');
+            $email = $this->io->post('email');
+            $password = $this->io->post('password');
+            $role = $this->io->post('role') ?? 'user';
+
+            $data = [
+                'username' => $username,
+                'email' => $email,
+                'password' => $password,
+                'role' => $role
+            ];
+
+            if ($this->StudentsModel->user_register($data)) {
+                redirect('login');
+            } else {
+                $data['error'] = 'Registration failed. Please try again.';
+                $this->call->view('user_auth/register', $data);
+            }
+        } else {
+            $this->call->view('user_auth/register');
+        }
+    }
+
+    public function logout() {
+        $this->session->sess_destroy();
+        redirect('login');
+    }
 }
+
