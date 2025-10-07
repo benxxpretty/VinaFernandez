@@ -151,30 +151,40 @@ class StudentController extends Controller {
         }
     }
 
-    public function register() {
-        if ($this->io->method() == 'post') {
-            $username = $this->io->post('username');
-            $email = $this->io->post('email');
-            $password = $this->io->post('password');
-            $role = $this->io->post('role') ?? 'user';
+ public function register() {
+    if ($this->io->method() == 'post') {
+        $username = $this->io->post('username');
+        $email = $this->io->post('email');
+        $password = $this->io->post('password');
+        $role = $this->io->post('role') ?? 'user';
 
-            $data = [
-                'username' => $username,
-                'email' => $email,
-                'password' => $password,
-                'role' => $role
-            ];
+        $data = [
+            'username' => $username,
+            'email' => $email,
+            'password' => $password,
+            'role' => $role
+        ];
 
+        try {
             if ($this->StudentModel->user_register($data)) {
                 redirect('login');
             } else {
                 $data['error'] = 'Registration failed. Please try again.';
                 $this->call->view('user_auth/register', $data);
             }
-        } else {
-            $this->call->view('user_auth/register');
+        } catch (PDOException $e) {
+            if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                $data['error'] = 'Username already exists. Please choose another one.';
+                $this->call->view('user_auth/register', $data);
+            } else {
+                throw $e; // other database errors
+            }
         }
+    } else {
+        $this->call->view('user_auth/register');
     }
+}
+
 
     public function logout() {
         $this->session->sess_destroy();
