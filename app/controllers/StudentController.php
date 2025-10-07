@@ -20,6 +20,11 @@ class StudentController extends Controller {
     public function index()
     
     {
+          // Check if user is logged in
+        if (!$this->session->userdata('user_id')) {
+            redirect('login');
+        }
+
        $this->call->model('StudentModel');
 
         $page = 1;
@@ -49,11 +54,16 @@ class StudentController extends Controller {
         $this->pagination->initialize($total_rows, $records_per_page, $page, 'students?q='.$q);
         $data['page'] = $this->pagination->paginate();
 
+       
+        $data['page'] = $this->pagination->paginate();
+        $data['current_role'] = $this->session->userdata('role') ?? 'user';
         $this->call->view('students/index', $data);
     }
 
     public function create() 
-    {
+    {  if (!$this->session->userdata('user_id')) {
+            redirect('login');
+        }
         if($this->io->method() == 'post') {
             $first_name = $this->io->post('first_name');
             $last_name  = $this->io->post('last_name');
@@ -66,7 +76,7 @@ class StudentController extends Controller {
             );
 
             if ($this->StudentModel->insert($data)) {
-                redirect();
+                redirect('students/index');
             } else {
                 echo 'Error creating student.';
             }
@@ -78,7 +88,9 @@ class StudentController extends Controller {
 
 
     public function update($id)
-    {
+    {   if (!$this->session->userdata('user_id') || $this->session->userdata('role') !== 'admin') {
+            redirect('login');
+        }
         $user = $this->StudentModel->find($id);
         if (!$user) {   
             echo 'Student not found.';
@@ -97,7 +109,7 @@ class StudentController extends Controller {
             );
 
             if ($this->StudentModel->update($id, $data)) {
-                redirect();
+                redirect('students/index');
             } else {
                 echo 'Error updating student.';
             }
@@ -108,9 +120,12 @@ class StudentController extends Controller {
     }
 
     public function delete($id)
-    {
-        if ($this->StudentModel->delete($id)) {
-            redirect();
+    {  if (!$this->session->userdata('user_id') || $this->session->userdata('role') !== 'admin') {
+            redirect('login');
+        }
+
+        if($this->StudentsModel->delete($id)){
+            redirect('students/index');
         } else {
             echo 'Error deleting student.';
         }
@@ -125,13 +140,13 @@ class StudentController extends Controller {
                 $this->session->set_userdata('user_id', $user['id']);
                 $this->session->set_userdata('username', $user['username']);
                 $this->session->set_userdata('role', $user['role']);
-                redirect('/users/index');
+                redirect('/students/index');
             } else {
                 $data['error'] = 'Invalid username or password';
-                $this->call->view('user_auth/login', $data);
+                $this->call->view('users/login', $data);
             }
         } else {
-            $this->call->view('user_auth/login');
+            $this->call->view('users/login');
         }
     }
 
@@ -153,10 +168,10 @@ class StudentController extends Controller {
                 redirect('login');
             } else {
                 $data['error'] = 'Registration failed. Please try again.';
-                $this->call->view('user_auth/register', $data);
+                $this->call->view('users/register', $data);
             }
         } else {
-            $this->call->view('user_auth/register');
+            $this->call->view('users/register');
         }
     }
 
