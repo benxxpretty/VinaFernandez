@@ -43,9 +43,10 @@ class StudentsModel extends Model {
 
     public function user_page($q, $records_per_page = null, $page = null) {
         if (is_null($page)) {
-            return $this->db->table($this->user_table)->get_all();
+            return $this->db->table($this->students_table)->get_all();
         } else {
-            $query = $this->db->table($this->user_table);
+            $query = $this->db->table($this->students_table);
+            
 
             // Build LIKE conditions for search
             $query->like('id', '%'.$q.'%')
