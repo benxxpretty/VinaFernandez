@@ -135,7 +135,7 @@ class StudentsController extends Controller {
                 $this->session->set_userdata('user_id', $user['id']);
                 $this->session->set_userdata('username', $user['username']);
                 $this->session->set_userdata('role', $user['role']);
-                redirect('/ustudents/index');
+                redirect('/students/index');
             } else {
                 $data['error'] = 'Invalid username or password';
                 $this->call->view('user_auth/login', $data);

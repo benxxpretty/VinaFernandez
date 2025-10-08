@@ -69,7 +69,7 @@ class StudentsModel extends Model {
     public function user_register($data) {
         // Hash the password before saving
         $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
-        return $this->db->table($this->user_table)->insert($data);
+        return $this->db->table($this->user_auth_table)->insert($data);
     }
 
     public function user_login($username, $password) {
